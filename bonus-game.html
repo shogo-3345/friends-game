@@ -240,6 +240,7 @@
         let bonusTimer = null;
         let timeLeft = 70;
         let usedQuestions = [];
+        let usedPhotos = [];
 
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -296,7 +297,12 @@
             bonusQuestionCount++;
             document.getElementById('questionNumber').textContent = bonusQuestionCount;
             
-            const photoIndex = Math.floor(Math.random() * otherPeoplePhotos.length);
+            let photoIndex;
+            do {
+                photoIndex = Math.floor(Math.random() * otherPeoplePhotos.length);
+            } while (usedPhotos.includes(photoIndex));
+            
+            usedPhotos.push(photoIndex);
             document.getElementById('bonusPhoto').src = otherPeoplePhotos[photoIndex];
 
             const types = ['kanji', 'history', 'trivia'];
