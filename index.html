@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>入江顔当てゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .photos-container {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            min-height: 120px;
+        }
+
+        .photos-container h2 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .photo-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 10px;
+            cursor: grab;
+            transition: transform 0.2s;
+            user-select: none;
+            object-fit: cover;
+            border: 3px solid #007bff;
+        }
+
+        .photo:hover {
+            transform: scale(1.1);
+        }
+
+        .photo.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .decades-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .decade-box {
+            background: #e9ecef;
+            border: 3px solid #ced4da;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .decade-box.drag-over {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            transform: scale(1.02);
+        }
+
+        .decade-box h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .dropped-photos {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .dropped-photo {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid #28a745;
+        }
+
+        .effect {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .correct-effect {
+            color: #28a745;
+            animation: correctPulse 1s ease-out;
+        }
+
+        .wrong-effect {
+            color: #dc3545;
+            animation: wrongShake 0.5s ease-out;
+        }
+
+        @keyframes correctPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        @keyframes wrongShake {
+            0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+            25% { transform: translate(-50%, -50%) translateX(-10px); }
+            75% { transform: translate(-50%, -50%) translateX(10px); }
+        }
+
+        .congratulations {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .congratulations.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .congratulations-content {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            animation: celebrationBounce 1s ease-out;
+        }
+
+        @keyframes celebrationBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .reset-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .reset-btn:hover {
+            background: #0056b3;
+        }
+
+        .mode-selection {
+            text-align: center;
+            padding: 50px 0;
+        }
+
+        .mode-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            margin: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+
+        .mode-btn:hover {
+            background: #218838;
+        }
+
+        #lifeDisplay {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 いつの入江かな？</h1>
+
+        <audio id="bgm" src="project_758780.mp3" loop></audio>
+        <button id="play-button">再生</button>
+
+        <div id="modeSelection" class="mode-selection">
+            <h2>モードを選択してください</h2>
+            <button class="mode-btn" onclick="startGame('normal')">ノーマルモード (5枚)</button>
+            <button class="mode-btn" onclick="startGame('hard')">ハードモード (7枚・ライフ3)</button>
+        </div>
+
+        <div id="gameArea" style="display: none;">
+            <div id="lifeDisplay" style="display: none;">
+                <h3>❤️ ライフ: <span id="lifeCount">3</span></h3>
+            </div>
+            
+            <div class="photos-container">
+                <h2>📷 写真一覧</h2>
+                <div class="photo-list" id="photoList">
+                </div>
+            </div>
+
+            <div class="decades-container" id="decadesContainer">
+            </div>
+
+            <button class="reset-btn" onclick="resetGame()">🔄 新しいゲーム</button>
+        </div>
+    </div>
+
+    <div class="congratulations" id="congratulations">
+        <div class="congratulations-content">
+            <h1>🎉 おめでとうございます！ 🎉</h1>
+            <p>すべて正解です！素晴らしい！</p>
+            <button class="reset-btn" onclick="resetGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <div class="congratulations" id="gameOver">
+        <div class="congratulations-content">
+            <h1>💀 ゲームオーバー 💀</h1>
+            <p>ライフが0になりました...</p>
+            <button class="reset-btn" onclick="resetGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <div class="congratulations" id="bonusPrompt">
+        <div class="congratulations-content">
+            <h1>🎉 ハードモードクリア！ 🎉</h1>
+            <p>ボーナスゲームに進みますか？</p>
+            <p>50秒以内に8問解けばクリアです！</p>
+            <button class="reset-btn" onclick="startBonusGame()">ボーナスゲームに進む</button>
+            <button class="reset-btn" onclick="resetGame()">ゲーム終了</button>
+        </div>
+    </div>
+
+    <script>
+        const bgm = document.getElementById('bgm');
+        const playButton = document.getElementById('play-button');
+  
+        let isPlaying = false; // 再生中かどうかの状態を管理
+
+        playButton.addEventListener('click', () => {
+        if (isPlaying) {
+            bgm.pause(); // 再生中なら停止
+            playButton.textContent = '再生';
+        } else {
+            bgm.play(); // 停止中なら再生
+            playButton.textContent = '停止';
+        }
+        isPlaying = !isPlaying; // 状態を反転
+        });
+  
+</script>
+    <script>
+        const folderPhotoMap = {
+            "2024年3月": [
+                        "574017631678365841.jpg"
+            ],
+            "2023年8月": [
+                        "574017495464411861.jpg"
+            ],
+            "2022年5月": [
+                        "574017119134941355.jpg"
+            ],
+            "2024年7月": [
+                        "574017746971918371.jpg"
+            ],
+            "2024年1月": [
+                        "574017577807249753.jpg"
+            ],
+            "2025年2月": [
+                        "576972080810557850.jpg",
+                        "441EEB342952F206B1816154196C36C55E673C3F.jpeg",
+                        "D2204118247B525CFA6AD17A5DB6E000E4FB3B62.jpeg"
+            ],
+            "2025年6月": [
+                        "574017820741599388.jpg",
+                        "574017819717665455.jpg"
+            ],
+            "2022年12月": [
+                        "576972368824500683.jpg"
+            ],
+            "2023年3月": [
+                        "574017402586005663.jpg"
+            ],
+            "2023年6月": [
+                        "576969826556707089.jpg",
+                        "574017444713857505.jpg"
+            ],
+            "2024年10月": [
+                        "576972297420669591.jpg",
+                        "576972297052094894.jpg"
+            ]
+};
+        let gameData = { photos: [], decades: [] };
+        let correctPlacements = 0;
+        let gameMode = 'normal';
+        let lives = 3;
+
+        function showBonusPrompt() {
+            document.getElementById('bonusPrompt').classList.add('show');
+            const bgm = document.getElementById('bgm');
+            bgm.pause();
+        }
+
+        function startBonusGame() {
+            window.open('bonus-game.html', '_blank', 'width=800,height=600');
+            resetGame();
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function loadPhotosFromFolders() {
+            const availableFolders = Object.keys(folderPhotoMap);
+            const maxPhotos = gameMode === 'hard' ? 7 : 5;
+            
+            // ランダムに最大枚数のフォルダを選択
+            const shuffled = availableFolders.sort(() => 0.5 - Math.random());
+            const selectedFolders = shuffled.slice(0, maxPhotos);
+
+            const photos = [];
+            const decades = [];
+
+            selectedFolders.forEach(folder => {
+                const photoFiles = folderPhotoMap[folder];
+                if (photoFiles && photoFiles.length > 0) {
+                    // ランダムに1枚選択
+                    const randomFile = photoFiles[Math.floor(Math.random() * photoFiles.length)];
+                    
+                    photos.push({
+                        id: `photo_${photos.length}`,
+                        path: `${folder}/${randomFile}`,
+                        decade: folder
+                    });
+                    
+                    decades.push(folder);
+                }
+            });
+
+            return { 
+                photos: shuffleArray(photos), 
+                decades: shuffleArray(decades) 
+            };
+        }
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(frequency, duration, type = 'sine') {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playCorrectSound() {
+            playSound(523, 0.2);
+            setTimeout(() => playSound(659, 0.2), 100);
+            setTimeout(() => playSound(784, 0.3), 200);
+        }
+
+        function playWrongSound() {
+            playSound(200, 0.5, 'sawtooth');
+        }
+
+        function startGame(mode) {
+            gameMode = mode;
+            lives = 3;
+            document.getElementById('modeSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            
+            if (mode === 'hard') {
+                document.getElementById('lifeDisplay').style.display = 'block';
+                updateLifeDisplay();
+            } else {
+                document.getElementById('lifeDisplay').style.display = 'none';
+            }
+            
+            initGame();
+        }
+
+        function updateLifeDisplay() {
+            document.getElementById('lifeCount').textContent = lives;
+        }
+
+        function initGame() {
+            gameData = loadPhotosFromFolders();
+            createPhotos();
+            createDecadeBoxes();
+            correctPlacements = 0;
+        }
+
+        function createPhotos() {
+            const photoList = document.getElementById('photoList');
+            photoList.innerHTML = '';
+            
+            gameData.photos.forEach(photo => {
+                const photoElement = document.createElement('img');
+                photoElement.className = 'photo';
+                photoElement.draggable = true;
+                photoElement.id = photo.id;
+                photoElement.src = photo.path;
+                photoElement.dataset.decade = photo.decade;
+                photoElement.alt = `${photo.decade}の写真`;
+                
+                photoElement.addEventListener('dragstart', handleDragStart);
+                photoElement.addEventListener('dragend', handleDragEnd);
+                photoElement.addEventListener('error', () => {
+                    photoElement.style.background = '#ddd';
+                    photoElement.alt = '画像読み込みエラー';
+                });
+                
+                photoList.appendChild(photoElement);
+            });
+        }
+
+        function createDecadeBoxes() {
+            const container = document.getElementById('decadesContainer');
+            container.innerHTML = '';
+            
+            gameData.decades.forEach(decade => {
+                const box = document.createElement('div');
+                box.className = 'decade-box';
+                box.dataset.decade = decade;
+                
+                box.innerHTML = `
+                    <h3>${decade}</h3>
+                    <div class="dropped-photos"></div>
+                `;
+                
+                box.addEventListener('dragover', handleDragOver);
+                box.addEventListener('drop', handleDrop);
+                box.addEventListener('dragenter', handleDragEnter);
+                box.addEventListener('dragleave', handleDragLeave);
+                
+                container.appendChild(box);
+            });
+        }
+
+        function handleDragStart(e) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const photoId = e.dataTransfer.getData('text/plain');
+            const photoElement = document.getElementById(photoId);
+            const targetDecade = e.currentTarget.dataset.decade;
+            const photoDecade = photoElement.dataset.decade;
+            
+            if (photoDecade === targetDecade) {
+                showEffect('✓', 'correct-effect');
+                playCorrectSound();
+                
+                const droppedPhotos = e.currentTarget.querySelector('.dropped-photos');
+                const droppedPhoto = photoElement.cloneNode(true);
+                droppedPhoto.className = 'dropped-photo';
+                droppedPhoto.draggable = false;
+                droppedPhotos.appendChild(droppedPhoto);
+                
+                photoElement.remove();
+                correctPlacements++;
+                
+                if (correctPlacements === gameData.photos.length) {
+                    setTimeout(showCongratulations, 1000);
+                }
+            } else {
+                showEffect('✗', 'wrong-effect');
+                playWrongSound();
+                
+                if (gameMode === 'hard') {
+                    lives--;
+                    updateLifeDisplay();
+                    
+                    if (lives <= 0) {
+                        setTimeout(showGameOver, 1000);
+                        return;
+                    }
+                }
+                
+                photoElement.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    photoElement.style.transform = '';
+                }, 300);
+            }
+        }
+
+        function showEffect(symbol, className) {
+            const effect = document.createElement('div');
+            effect.className = `effect ${className}`;
+            effect.textContent = symbol;
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                document.body.removeChild(effect);
+            }, 1000);
+        }
+
+        function showGameOver() {
+            const gameOver = document.getElementById('gameOver');
+            gameOver.classList.add('show');
+            const bgm = document.getElementById('bgm');
+            bgm.pause();
+        }
+
+        function showCongratulations() {
+            if (gameMode === 'hard') {
+                setTimeout(showBonusPrompt, 1000);
+            } else {
+                const congratulations = document.getElementById('congratulations');
+                congratulations.classList.add('show');
+                const bgm = document.getElementById('bgm');
+                bgm.pause();
+                
+                playCorrectSound();
+                setTimeout(playCorrectSound, 300);
+                setTimeout(playCorrectSound, 600);
+            }
+        }
+
+        function resetGame() {
+            const bgm = document.getElementById('bgm');
+            const congratulations = document.getElementById('congratulations');
+            const gameOver = document.getElementById('gameOver');
+            const bonusPrompt = document.getElementById('bonusPrompt');
+            congratulations.classList.remove('show');
+            gameOver.classList.remove('show');
+            bonusPrompt.classList.remove('show');
+            
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
+        }
+
+        window.addEventListener('load', () => {
+            document.getElementById('modeSelection').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
