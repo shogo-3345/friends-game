@@ -16,8 +16,5 @@
   "bugs": {
     "url": "https://github.com/shogo-3345/friends-game/issues"
   },
-  "homepage": "https://github.com/shogo-3345/friends-game#readme",
-  "dependencies": {
-    "next": "^15.5.3"
-  }
+  "homepage": "https://github.com/shogo-3345/friends-game#readme"
 }

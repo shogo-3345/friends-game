@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-
+// NextResponseをインポートしない
 export const config = {
   matcher: '/(.*)',
 };
@@ -10,25 +9,23 @@ export default function middleware(request) {
   try {
     if (authorizationHeader) {
       const basicAuth = authorizationHeader.split(' ')[1];
-      // atob()が失敗する可能性も考慮し、チェックを強化
-      if (!basicAuth) {
-        throw new Error('Invalid basic auth header');
-      }
-      const [user, password] = atob(basicAuth).toString().split(':');
-
-      if (
-        user === process.env.BASIC_AUTH_USER &&
-        password === process.env.BASIC_AUTH_PASSWORD
-      ) {
-        return NextResponse.next();
+      if (basicAuth) {
+        const [user, password] = atob(basicAuth).toString().split(':');
+        if (
+          user === process.env.BASIC_AUTH_USER &&
+          password === process.env.BASIC_AUTH_PASSWORD
+        ) {
+          // 認証成功時は何も返さない（次の処理に進む）
+          return;
+        }
       }
     }
   } catch (error) {
     console.error("Auth error:", error.message);
   }
 
-  // 認証に失敗した場合、またはヘッダーが無効な場合は認証を要求
-  return new NextResponse('Authentication required', {
+  // 認証失敗時は401レスポンスを返す
+  return new Response('Authentication required', {
     status: 401,
     headers: {
       'WWW-Authenticate': 'Basic realm="Secure Area"',
