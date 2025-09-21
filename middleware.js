@@ -12,7 +12,7 @@ export default function middleware(request) {
       if (basicAuth) {
         const [user, password] = atob(basicAuth).toString().split(':');
         if (
-          user === process.env.BASIC_AUTH_USER &&
+          user === process.env.BASIC_AUTH_USERNAME &&
           password === process.env.BASIC_AUTH_PASSWORD
         ) {
           // 認証成功時は何も返さない（次の処理に進む）
