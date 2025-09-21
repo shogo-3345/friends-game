@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ボーナスゲーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            background-image: url('2022年5月/574017119134941355.jpg');
+            background-size: 0%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            transition: background-size 1s ease-out;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .timer {
+            font-size: 24px;
+            color: #dc3545;
+        }
+
+        .question-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .photo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .bonus-photo {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid #007bff;
+        }
+
+        .question {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 20px;
+        }
+
+        .input-area {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .input-area input {
+            padding: 10px;
+            font-size: 16px;
+            width: 200px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .input-area button {
+            padding: 10px 20px;
+            margin-left: 10px;
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .choice-btn {
+            padding: 15px;
+            font-size: 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: #e9ecef;
+        }
+
+        .result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>ボーナスゲーム</h2>
+            <div class="timer">⏰ <span id="timer">70</span>秒</div>
+        </div>
+        
+        <div class="question-info">
+            問題 <span id="questionNumber">1</span> / 8
+        </div>
+        
+        <div class="photo-container">
+            <img id="bonusPhoto" class="bonus-photo">
+        </div>
+        
+        <div id="bonusQuestion" class="question"></div>
+        
+        <div id="bonusInput" class="input-area" style="display: none;">
+            <input type="text" id="answerInput" placeholder="答えを入力してください">
+            <button onclick="checkAnswer()">回答</button>
+        </div>
+        
+        <div id="bonusChoices" class="choices" style="display: none;"></div>
+
+        <!-- ゲーム開始ボタン -->
+        <div id="startScreen" style="text-align:center; margin-top:20px;">
+            <button class="btn" onclick="startGame()">ゲーム開始</button>
+        </div>
+    </div>
+
+    <div id="result" class="result" style="display: none;">
+        <h1 id="resultTitle"></h1>
+        <p id="resultText"></p>
+        <button class="btn" onclick="window.close()">閉じる</button>
+    </div>
+
+    <audio id="bgm" src="quiz-master-382651.mp3" loop></audio>
+
+    <script>
+        const questions = {
+            kanji: [
+                {q: "贔屓", a: "ひいき"},
+                {q: "踵", a: "かかと"},
+                {q: "狼煙", a: "のろし"},
+                {q: "齟齬", a: "そご"},
+                {q: "顰蹙", a: "ひんしゅく"},
+                {q: "膾炙", a: "かいしゃ"},
+                {q: "巫女", a: "みこ"},
+                {q: "杜撰", a: "ずさん"},
+                {q: "検める", a: "あらためる"},
+                {q: "訝しい", a: "いぶかしい"},
+                {q: "沙汰", a: "さた"},
+                {q: "煩悩", a: "ぼんのう"},
+                {q: "倦怠", a: "けんたい"},
+                {q: "愚弄", a: "ぐろう"},
+                {q: "鳩尾", a: "みぞおち"}
+            ],
+            history: [
+                {q: "織田信長が本能寺で討たれたのは？", a: "1582"},
+                {q: "明治維新は？", a: "1868"},
+                {q: "鎌倉幕府を開いた人物", a: "源頼朝"},
+                {q: "平安時代の貴族の生活様式", a: "寝殿造"},
+                {q: "江戸幕府の初代将軍", a: "徳川家康"},
+                {q: "日清戦争が始まった年", a: "1894"},
+                {q: "聖徳太子が制定した法律", a: "十七条憲法"},
+                {q: "大化の改新は西暦？", a: "645"},
+                {q: "第二次世界大戦が終わった年", a: "1945"},
+                {q: "応仁の乱が始まった年", a: "1467"}
+            ],
+            trivia: [
+                {q: "地球上で一番人口が多い国は？", choices: ["中国", "インド", "アメリカ", "インドネシア"], a: 0},
+                {q: "世界で一番面積が広い国は？", choices: ["ロシア", "カナダ", "中国", "アメリカ"], a: 0},
+                {q: "日本で一番長い川は？", choices: ["信濃川", "利根川", "石狩川", "木曽川"], a: 0},
+                {q: "オリンピックが最初に開かれた国は？", choices: ["ギリシャ", "フランス", "イタリア", "イギリス"], a: 0},
+                {q: "人間の体で一番重い臓器は？", choices: ["肝臓", "心臓", "腎臓", "脳"], a: 0}
+            ]
+        };
+
+        const otherPeoplePhotos = [
+            "otherpeople/IMG_6776.jpg",
+            "otherpeople/thumbnail_473ED069-86E6-4D33-B529-556D7A7CFB06.jpg",
+            "otherpeople/BF3E910F-852D-469C-882B-6339CC449962.JPEG",
+            "otherpeople/CBF1FF36-4EB1-4B02-8A24-B4D709CD86D5.JPEG",
+            "otherpeople/3539A102-26A5-41EB-AE4C-891E4B09516A.JPEG",
+            "otherpeople/ACFA48F7-9D9F-44D1-8CBB-43F063FCABED.JPEG",
+            "otherpeople/43C651DF-8062-4510-A8DC-44A2D1DDC1BE.JPEG",
+            "otherpeople/1E5444FF-77EC-4B49-B3D6-A4A667FF2DBF.JPEG"
+        ];
+
+        let currentQuestion = null;
+        let bonusQuestionCount = 0;
+        let bonusCorrectCount = 0;
+        let bonusTimer = null;
+        let timeLeft = 70;
+        let usedQuestions = [];
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(frequency, duration, type = 'sine') {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playCorrectSound() {
+            playSound(523, 0.2);
+            setTimeout(() => playSound(659, 0.2), 100);
+            setTimeout(() => playSound(784, 0.3), 200);
+        }
+
+        function playWrongSound() {
+            playSound(200, 0.5, 'sawtooth');
+        }
+
+        function startTimer() {
+            bonusTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = timeLeft;
+                
+                const progress = (70 - timeLeft) / 100;
+                const backgroundSize = Math.min(progress * 150, 100);
+                document.body.style.backgroundSize = `${backgroundSize}%`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(bonusTimer);
+                    endBonusGame();
+                }
+            }, 1000);
+        }
+
+        function nextBonusQuestion() {
+            if (bonusQuestionCount >= 8) {
+                clearInterval(bonusTimer);
+                endBonusGame();
+                return;
+            }
+
+            bonusQuestionCount++;
+            document.getElementById('questionNumber').textContent = bonusQuestionCount;
+            
+            const photoIndex = Math.floor(Math.random() * otherPeoplePhotos.length);
+            document.getElementById('bonusPhoto').src = otherPeoplePhotos[photoIndex];
+
+            const types = ['kanji', 'history', 'trivia'];
+            let type, questionList, questionIndex;
+            
+            do {
+                type = types[Math.floor(Math.random() * types.length)];
+                questionList = questions[type];
+                questionIndex = Math.floor(Math.random() * questionList.length);
+                currentQuestion = questionList[questionIndex];
+            } while (usedQuestions.includes(`${type}-${questionIndex}`));
+            
+            usedQuestions.push(`${type}-${questionIndex}`);
+            
+            if (type === 'trivia') {
+                showTriviaQuestion();
+            } else {
+                showInputQuestion(type);
+            }
+        }
+
+        function showInputQuestion(type) {
+            const prefix = type === 'kanji' ? 'この漢字の読み方は？<br>' : '';
+            document.getElementById('bonusQuestion').innerHTML = `${prefix}${currentQuestion.q}`;
+            document.getElementById('bonusInput').style.display = 'block';
+            document.getElementById('bonusChoices').style.display = 'none';
+            document.getElementById('answerInput').focus();
+        }
+
+        function showTriviaQuestion() {
+            document.getElementById('bonusQuestion').innerHTML = currentQuestion.q;
+            document.getElementById('bonusInput').style.display = 'none';
+            
+            const choicesDiv = document.getElementById('bonusChoices');
+            choicesDiv.style.display = 'block';
+            choicesDiv.innerHTML = '';
+            
+            currentQuestion.choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choice-btn';
+                button.textContent = choice;
+                button.onclick = () => checkTriviaAnswer(index);
+                choicesDiv.appendChild(button);
+            });
+        }
+
+        function checkAnswer() {
+            const input = document.getElementById('answerInput').value.trim();
+            if (input === currentQuestion.a) {
+                bonusCorrectCount++;
+                playCorrectSound();
+                document.getElementById('answerInput').value = '';
+                nextBonusQuestion();
+            } else {
+                playWrongSound();
+            }
+        }
+
+        function checkTriviaAnswer(selectedIndex) {
+            if (selectedIndex === currentQuestion.a) {
+                bonusCorrectCount++;
+                playCorrectSound();
+                nextBonusQuestion();
+            } else {
+                playWrongSound();
+            }
+        }
+
+        function endBonusGame() {
+            clearInterval(bonusTimer);
+
+            // BGM停止
+            const bgm = document.getElementById('bgm');
+            bgm.pause();
+            bgm.currentTime = 0;
+
+            const result = document.getElementById('result');
+            const title = document.getElementById('resultTitle');
+            const text = document.getElementById('resultText');
+            
+            if (bonusCorrectCount >= 8) {
+                title.textContent = '🎉 ボーナスゲームクリア！ 🎉';
+                text.textContent = `${bonusCorrectCount}/8問正解！`;
+            } else {
+                title.textContent = 'ボーナスゲーム終了';
+                text.textContent = `${bonusCorrectCount}/8問正解でした。`;
+            }
+            
+            result.style.display = 'block';
+        }
+
+        function startGame() {
+            // BGM再生（ユーザー操作なので許可される）
+            const bgm = document.getElementById('bgm');
+            bgm.play().catch(() => {});
+
+            document.getElementById('startScreen').style.display = 'none';
+            startTimer();
+            nextBonusQuestion();
+        }
+
+        document.getElementById('answerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
