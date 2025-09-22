@@ -220,6 +220,14 @@
             margin-bottom: 20px;
             color: #dc3545;
         }
+
+        #timerDisplay {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ff6b35;
+            font-size: 24px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -238,6 +246,10 @@
         <div id="gameArea" style="display: none;">
             <div id="lifeDisplay" style="display: none;">
                 <h3>❤️ ライフ: <span id="lifeCount">3</span></h3>
+            </div>
+            
+            <div id="timerDisplay" style="display: none;">
+                <h3>⏰ 残り時間: <span id="timeLeft">40</span>秒</h3>
             </div>
             
             <div class="photos-container">
@@ -342,6 +354,8 @@
         let correctPlacements = 0;
         let gameMode = 'normal';
         let lives = 3;
+        let timeLeft = 40;
+        let gameTimer = null;
 
         function showBonusPrompt() {
             document.getElementById('bonusPrompt').classList.add('show');
@@ -428,14 +442,19 @@
         function startGame(mode) {
             gameMode = mode;
             lives = 3;
+            timeLeft = 40;
             document.getElementById('modeSelection').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             
             if (mode === 'hard') {
                 document.getElementById('lifeDisplay').style.display = 'block';
+                document.getElementById('timerDisplay').style.display = 'block';
                 updateLifeDisplay();
+                updateTimerDisplay();
+                startTimer();
             } else {
                 document.getElementById('lifeDisplay').style.display = 'none';
+                document.getElementById('timerDisplay').style.display = 'none';
             }
             
             initGame();
@@ -443,6 +462,22 @@
 
         function updateLifeDisplay() {
             document.getElementById('lifeCount').textContent = lives;
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timeLeft').textContent = timeLeft;
+        }
+
+        function startTimer() {
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    showGameOver();
+                }
+            }, 1000);
         }
 
         function initGame() {
@@ -586,6 +621,10 @@
         }
 
         function showCongratulations() {
+            if (gameTimer) {
+                clearInterval(gameTimer);
+            }
+            
             if (gameMode === 'hard') {
                 setTimeout(showBonusPrompt, 1000);
             } else {
@@ -601,6 +640,11 @@
         }
 
         function resetGame() {
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            
             const bgm = document.getElementById('bgm');
             const congratulations = document.getElementById('congratulations');
             const gameOver = document.getElementById('gameOver');
