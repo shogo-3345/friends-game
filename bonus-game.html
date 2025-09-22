@@ -153,7 +153,7 @@
         </div>
         
         <div class="question-info">
-            問題 <span id="questionNumber">1</span> / 8
+            正解数: <span id="correctCount">0</span>問
         </div>
         
         <div class="photo-container">
@@ -205,21 +205,27 @@
             history: [
                 {q: "織田信長が本能寺で討たれたのは？", a: "1582"},
                 {q: "明治維新は？", a: "1868"},
-                {q: "鎌倉幕府を開いた人物", a: "源頼朝"},
-                {q: "平安時代の貴族の生活様式", a: "寝殿造"},
-                {q: "江戸幕府の初代将軍", a: "徳川家康"},
+                {q: "鎌倉幕府を開いた人物は？", a: "源頼朝"},
+                {q: "平安時代の貴族の生活様式は？(漢字3文字で)", a: "寝殿造"},
+                {q: "江戸幕府の初代将軍は？", a: "徳川家康"},
                 {q: "日清戦争が始まった年", a: "1894"},
-                {q: "聖徳太子が制定した法律", a: "十七条憲法"},
-                {q: "大化の改新は西暦？", a: "645"},
-                {q: "第二次世界大戦が終わった年", a: "1945"},
-                {q: "応仁の乱が始まった年", a: "1467"}
+                {q: "聖徳太子が制定した法律は？", a: "十七条憲法"},
+                {q: "大化の改新は西暦何年？", a: "645"},
+                {q: "第二次世界大戦が終わった年は？", a: "1945"},
+                {q: "応仁の乱が始まった年は？", a: "1467"},
+		{q: "夏木が一番気に入ってる筋肉の部位は？(漢字3文字で)", a: "大胸筋"},
+		{q: "時永の実家のマンション名は?", a: "シーブリーズ"},
+		{q: "七山谷の通っていた中学校名は？(ひらがな3文字で)", a: "きしき"},
+		{q: "しんどうのおとんの名前は？(ひらがな3文字で)", a:"たくや"},
+		{q: "日高と時永の好きな芸人は？", a: "ジャルジャル"}
             ],
             trivia: [
                 {q: "地球上で一番人口が多い国は？", choices: ["中国", "インド", "アメリカ", "インドネシア"], a: 0},
                 {q: "世界で一番面積が広い国は？", choices: ["ロシア", "カナダ", "中国", "アメリカ"], a: 0},
                 {q: "日本で一番長い川は？", choices: ["信濃川", "利根川", "石狩川", "木曽川"], a: 0},
                 {q: "オリンピックが最初に開かれた国は？", choices: ["ギリシャ", "フランス", "イタリア", "イギリス"], a: 0},
-                {q: "人間の体で一番重い臓器は？", choices: ["肝臓", "心臓", "腎臓", "脳"], a: 0}
+                {q: "人間の体で一番重い臓器は？", choices: ["肝臓", "心臓", "腎臓", "脳"], a: 0},
+		{q: "入江の足の長さは？", choices: ["2mm","5cm","40cm","2m"], a: 3}
             ]
         };
 
@@ -235,12 +241,11 @@
         ];
 
         let currentQuestion = null;
-        let bonusQuestionCount = 0;
         let bonusCorrectCount = 0;
         let bonusTimer = null;
         let timeLeft = 70;
         let usedQuestions = [];
-        let usedPhotos = [];
+        let photoIndex = 0;
 
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -288,22 +293,10 @@
         }
 
         function nextBonusQuestion() {
-            if (bonusQuestionCount >= 8) {
-                clearInterval(bonusTimer);
-                endBonusGame();
-                return;
-            }
-
-            bonusQuestionCount++;
-            document.getElementById('questionNumber').textContent = bonusQuestionCount;
+            document.getElementById('correctCount').textContent = bonusCorrectCount;
             
-            let photoIndex;
-            do {
-                photoIndex = Math.floor(Math.random() * otherPeoplePhotos.length);
-            } while (usedPhotos.includes(photoIndex));
-            
-            usedPhotos.push(photoIndex);
             document.getElementById('bonusPhoto').src = otherPeoplePhotos[photoIndex];
+            photoIndex = (photoIndex + 1) % otherPeoplePhotos.length;
 
             const types = ['kanji', 'history', 'trivia'];
             let type, questionList, questionIndex;
@@ -313,8 +306,11 @@
                 questionList = questions[type];
                 questionIndex = Math.floor(Math.random() * questionList.length);
                 currentQuestion = questionList[questionIndex];
-            } while (usedQuestions.includes(`${type}-${questionIndex}`));
+            } while (usedQuestions.includes(`${type}-${questionIndex}`) && usedQuestions.length < 50);
             
+            if (usedQuestions.length >= 50) {
+                usedQuestions = [];
+            }
             usedQuestions.push(`${type}-${questionIndex}`);
             
             if (type === 'trivia') {
@@ -383,13 +379,8 @@
             const title = document.getElementById('resultTitle');
             const text = document.getElementById('resultText');
             
-            if (bonusCorrectCount >= 8) {
-                title.textContent = '🎉 ボーナスゲームクリア！ 🎉';
-                text.textContent = `${bonusCorrectCount}/8問正解！`;
-            } else {
-                title.textContent = 'ボーナスゲーム終了';
-                text.textContent = `${bonusCorrectCount}/8問正解でした。`;
-            }
+            title.textContent = `${bonusCorrectCount}問クリア！！`;
+            text.textContent = `70秒間で${bonusCorrectCount}問正解しました！`;
             
             result.style.display = 'block';
         }
